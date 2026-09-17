@@ -1,0 +1,9 @@
+# Estado local de Obsidian que no debería versionarse
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache
+.trash/
+
+# Archivos temporales del sistema
+.DS_Store
+Thumbs.db

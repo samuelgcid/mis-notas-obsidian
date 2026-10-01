@@ -1,6 +1,8 @@
 services:
   bot:
     build: .
+    # Corre con tu usuario para poder escribir en ./data sin problemas de permisos.
+    user: "${BOT_UID:-1000}:${BOT_GID:-1000}"
     restart: always          # se levanta solo si se cae o si reinicia el servidor
     env_file: .env
     volumes:

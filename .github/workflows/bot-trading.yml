@@ -1,0 +1,38 @@
+name: bot-trading
+
+on:
+  push:
+    paths: ["Proyectos/bot-trading/**", ".github/workflows/bot-trading.yml"]
+  pull_request:
+    paths: ["Proyectos/bot-trading/**", ".github/workflows/bot-trading.yml"]
+
+defaults:
+  run:
+    working-directory: Proyectos/bot-trading
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: Proyectos/bot-trading/requirements*.txt
+      - run: pip install -r requirements-dev.txt
+      - run: python -m pytest -q
+      - name: Sintaxis de los scripts
+        run: bash -n scripts/*.sh
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir la imagen
+        run: docker build -t bot-trading .
+      - name: La imagen arranca la CLI
+        run: docker run --rm bot-trading python -m bot --help

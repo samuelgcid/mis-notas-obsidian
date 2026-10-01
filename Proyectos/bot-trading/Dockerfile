@@ -1,10 +1,10 @@
 FROM python:3.11-slim
-RUN useradd --create-home bot
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY bot ./bot
-USER bot
+# El usuario lo fija docker-compose (tu UID), así ./data es tuyo y nunca corre como root.
+USER 1000:1000
 ENV PYTHONUNBUFFERED=1
 # Sano si el latido tiene menos de 5 minutos.
 HEALTHCHECK --interval=60s --timeout=5s --start-period=120s \

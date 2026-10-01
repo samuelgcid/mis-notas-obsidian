@@ -1,7 +1,8 @@
-"""Línea de comandos: run, backtest, walkforward, status, kill, resume, reset-halt."""
+"""Línea de comandos: setup, check, run, backtest, walkforward, status, export, kill, resume, reset-halt."""
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import logging
 import os
@@ -83,10 +84,35 @@ def cmd_status(cfg) -> None:
         print(f"  {when} {t.side.upper()} {t.symbol} {t.qty:.6g} @ {t.price:.6g}{pnl} — {t.reason}")
 
 
+def cmd_check(cfg, args) -> None:
+    from .preflight import print_report, run_checks
+
+    exchange = build_exchange(cfg, with_keys=cfg.mode == "live")
+    ok = print_report(run_checks(cfg, exchange, Alerter(cfg.alerts), send_test_alert=args.test_alert))
+    sys.exit(0 if ok else 1)
+
+
+def cmd_export(cfg, args) -> None:
+    """Exporta todas las operaciones a CSV (para la contabilidad y la declaración de impuestos)."""
+    state = State(cfg.storage.db_path)
+    trades = list(reversed(state.trades(limit=10**9)))
+    with open(args.output, "w", newline="", encoding="utf-8") as fh:
+        w = csv.writer(fh)
+        w.writerow(["fecha_utc", "simbolo", "lado", "cantidad", "precio", "comision", "pnl", "motivo", "client_id"])
+        for t in trades:
+            when = datetime.fromtimestamp(t.ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+            w.writerow([when, t.symbol, t.side, t.qty, t.price, t.fee, "" if t.pnl is None else t.pnl, t.reason, t.client_id or ""])
+    total = sum(t.pnl for t in trades if t.pnl is not None)
+    print(f"{len(trades)} operaciones exportadas a {args.output} (PnL realizado total: {total:+.2f} {cfg.quote_currency})")
+
+
 def main(argv=None) -> None:
     p = argparse.ArgumentParser(prog="bot", description="Bot de trading autosuficiente")
     p.add_argument("--config", default=os.environ.get("BOT_CONFIG", "config.yaml"))
     sub = p.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("setup", help="asistente que crea config.yaml y .env")
+    ck = sub.add_parser("check", help="comprueba conexión, claves, mercados, capital y alertas")
+    ck.add_argument("--test-alert", action="store_true", help="envía un mensaje de prueba a Telegram")
     sub.add_parser("run", help="arranca el bucle de trading")
     for name in ("backtest", "walkforward"):
         sp = sub.add_parser(name)
@@ -99,13 +125,24 @@ def main(argv=None) -> None:
                 "--grid", default='{"fast_ema": [10, 20], "slow_ema": [50, 100], "atr_stop_mult": [2.0, 3.0]}'
             )
     sub.add_parser("status", help="estado, posiciones y últimas operaciones")
+    ex = sub.add_parser("export", help="exporta las operaciones a CSV")
+    ex.add_argument("--output", default="data/operaciones.csv")
     sub.add_parser("kill", help="activa el kill switch: cierra todo y deja de operar")
     sub.add_parser("resume", help="desactiva el kill switch")
     sub.add_parser("reset-halt", help="reanuda tras una parada por drawdown (revisa antes qué pasó)")
     args = p.parse_args(argv)
 
+    if args.cmd == "setup":
+        from .setup_wizard import run_wizard
+
+        run_wizard(args.config)
+        return
     cfg = load_config(args.config if os.path.exists(args.config) else None)
-    if args.cmd == "run":
+    if args.cmd == "check":
+        cmd_check(cfg, args)
+    elif args.cmd == "export":
+        cmd_export(cfg, args)
+    elif args.cmd == "run":
         cmd_run(cfg)
     elif args.cmd == "backtest":
         cmd_backtest(cfg, args)

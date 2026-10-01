@@ -93,7 +93,23 @@ def _merge(dc: Any, data: dict) -> Any:
     return dc
 
 
-def load_config(path: str | None) -> Config:
+def load_dotenv(path: str = ".env") -> None:
+    """Carga KEY=valor de un archivo .env sin pisar variables ya definidas en el entorno."""
+    if not os.path.exists(path):
+        return
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            value = value.strip().strip('"').strip("'")
+            if value:
+                os.environ.setdefault(key.strip(), value)
+
+
+def load_config(path: str | None, env_file: str = ".env") -> Config:
+    load_dotenv(env_file)
     cfg = Config()
     if path:
         with open(path, encoding="utf-8") as fh:
@@ -109,7 +125,7 @@ def load_config(path: str | None) -> Config:
     return cfg
 
 
-def validate(cfg: Config) -> None:
+def validate(cfg: Config, require_live_confirmation: bool = True) -> None:
     if cfg.mode not in ("paper", "live"):
         raise ValueError("mode debe ser 'paper' o 'live'")
     for sym in cfg.symbols:
@@ -127,7 +143,7 @@ def validate(cfg: Config) -> None:
     if cfg.mode == "live":
         if not (cfg.api_key and cfg.api_secret):
             raise ValueError("modo live requiere EXCHANGE_API_KEY y EXCHANGE_API_SECRET")
-        if os.environ.get("BOT_CONFIRM_LIVE") != "yes":
+        if require_live_confirmation and os.environ.get("BOT_CONFIRM_LIVE") != "yes":
             raise ValueError(
                 "modo live bloqueado: exporta BOT_CONFIRM_LIVE=yes si de verdad quieres operar"
             )

@@ -55,6 +55,25 @@ def build_exchange(cfg, with_keys: bool):
     return exchange
 
 
+def normalize_qty(market_data, symbol: str, qty: float, price: float) -> float:
+    """Ajusta la cantidad a la precisión y mínimos del mercado; 0 si no llega al mínimo."""
+    if qty <= 0:
+        return 0.0
+    try:
+        market = market_data.market(symbol)
+        qty = float(market_data.amount_to_precision(symbol, qty))
+        limits = market.get("limits", {})
+        min_amount = (limits.get("amount") or {}).get("min") or 0
+        min_cost = (limits.get("cost") or {}).get("min") or 0
+        if qty < min_amount or qty * price < min_cost:
+            return 0.0
+        return qty
+    except ccxt.InvalidOrder:
+        return 0.0  # ccxt lanza esto cuando la cantidad redondeada queda por debajo de la precisión
+    except (AttributeError, KeyError, ccxt.BadSymbol):
+        return math.floor(qty * 1e8) / 1e8
+
+
 class Broker(ABC):
     quote: str
 
@@ -75,23 +94,13 @@ class Broker(ABC):
         return float(price)
 
     def normalize_qty(self, symbol: str, qty: float, price: float) -> float:
-        """Ajusta la cantidad a la precisión y mínimos del mercado; 0 si no llega al mínimo."""
-        if qty <= 0:
-            return 0.0
-        try:
-            if not self._markets_loaded:
+        if not self._markets_loaded:
+            try:
                 with_retries(self.md.load_markets)
-                self._markets_loaded = True
-            market = self.md.market(symbol)
-            qty = float(self.md.amount_to_precision(symbol, qty))
-            limits = market.get("limits", {})
-            min_amount = (limits.get("amount") or {}).get("min") or 0
-            min_cost = (limits.get("cost") or {}).get("min") or 0
-            if qty < min_amount or qty * price < min_cost:
-                return 0.0
-            return qty
-        except (AttributeError, KeyError, ccxt.BadSymbol):
-            return math.floor(qty * 1e8) / 1e8
+            except AttributeError:
+                pass
+            self._markets_loaded = True
+        return normalize_qty(self.md, symbol, qty, price)
 
     # --- operativa ---------------------------------------------------------
     @abstractmethod

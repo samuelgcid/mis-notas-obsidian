@@ -1,0 +1,29 @@
+# Servicio systemd para un VPS Linux. Lo instala scripts/deploy-vps.sh.
+[Unit]
+Description=Bot de trading autosuficiente
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=bot
+Group=bot
+WorkingDirectory=/opt/bot-trading
+EnvironmentFile=-/opt/bot-trading/.env
+ExecStart=/opt/bot-trading/.venv/bin/python -m bot --config config.yaml run
+# Se reinicia siempre que se caiga (también tras reiniciar el servidor).
+Restart=always
+RestartSec=15
+# Parada ordenada: el bot termina la vuelta actual y guarda su estado.
+KillSignal=SIGTERM
+TimeoutStopSec=60
+# Endurecimiento: el proceso solo puede escribir en data/.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/bot-trading/data
+
+[Install]
+WantedBy=multi-user.target

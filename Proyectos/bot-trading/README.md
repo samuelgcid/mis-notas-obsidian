@@ -45,39 +45,108 @@ tendencia, solo largos y sin apalancamiento**, para mercados spot de cripto
    - Si no hay posición: entra cuando la tendencia alcista **acaba de confirmarse**,
      con el tamaño que arriesga un 1 % del capital hasta el stop.
 
-## Uso
+## Instalación y uso — elige tu forma
+
+Todas parten de la carpeta del proyecto (`cd Proyectos/bot-trading`) y siguen
+el mismo camino: **instalar → configurar (`setup`) → comprobar (`check`) →
+validar (`backtest`) → arrancar (`run`)**.
+
+| Forma | Para qué | Cómo |
+|---|---|---|
+| A. Script de instalación | Probar en tu ordenador (Linux/macOS) | `./scripts/install.sh` y luego `./scripts/run.sh` |
+| B. Windows | Probar en tu PC con Windows | `powershell -ExecutionPolicy Bypass -File scripts\install.ps1` y luego `.\scripts\run.ps1` |
+| C. Makefile | Atajos para todo | `make install`, `make run`, `make help` |
+| D. Docker | 24/7 en cualquier máquina con Docker | `make docker-check` y `make docker-up` |
+| E. VPS con systemd | 24/7 en un servidor Linux sin Docker | `sudo ./scripts/deploy-vps.sh` |
+| F. Manual | Control total | ver abajo |
+
+### A/B/C. En tu ordenador
 
 ```bash
-cd Proyectos/bot-trading
+./scripts/install.sh          # crea .venv, instala, pasa los tests y lanza el asistente
+./scripts/run.sh check        # comprobación previa
+./scripts/run.sh              # arranca (Ctrl+C para parar de forma ordenada)
+```
+
+En Windows usa `scripts\install.ps1` y `scripts\run.ps1` con los mismos
+comandos. Con `make`: `make install`, `make check`, `make run`.
+
+> Para que opere 24/7 el ordenador tiene que estar siempre encendido y
+> conectado. Para eso son mejores las opciones D o E.
+
+### D. Docker (recomendado para 24/7)
+
+```bash
+python -m bot setup            # o: cp config.example.yaml config.yaml && cp .env.example .env
+make docker-check              # comprobación previa dentro del contenedor
+make docker-up                 # arranca en segundo plano con reinicio automático
+make docker-logs               # ver qué hace
+make docker-status             # posiciones y operaciones
+make docker-down               # parar (las posiciones se conservan)
+```
+
+El contenedor corre con tu usuario (no como root), tiene un healthcheck
+basado en el latido y guarda estado, logs y kill switch en `./data`.
+
+### E. VPS Linux con systemd
+
+En un VPS (Hetzner, DigitalOcean, Contabo, AWS Lightsail…) con Debian/Ubuntu:
+
+```bash
+git clone <tu-repo> && cd mis-notas-obsidian/Proyectos/bot-trading
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/python -m bot setup              # crea config.yaml y .env
+sudo ./scripts/deploy-vps.sh               # instala en /opt/bot-trading como servicio
+```
+
+El script crea un usuario `bot` sin privilegios, instala en
+`/opt/bot-trading`, ejecuta la comprobación previa y activa el servicio
+(`deploy/bot-trading.service`): arranca con el servidor, se reinicia si se
+cae y solo puede escribir en `data/`. Volver a ejecutarlo actualiza el código
+sin tocar tu configuración ni tu estado.
+
+```bash
+systemctl status bot-trading
+journalctl -u bot-trading -f
+cd /opt/bot-trading && sudo -u bot .venv/bin/python -m bot status
+```
+
+### F. Manual
+
+```bash
 pip install -r requirements-dev.txt
-cp config.example.yaml config.yaml     # ajusta símbolos, timeframe y riesgo
-cp .env.example .env                   # claves y Telegram (opcional en paper)
-
-python -m pytest -q                    # tests
-python -m bot backtest --symbol BTC/USDT --since 2022-01-01
-python -m bot walkforward --symbol BTC/USDT --since 2021-01-01 --folds 4
-python -m bot run                      # arranca (paper por defecto)
-python -m bot status                   # posiciones, saldo, últimas operaciones
-python -m bot kill                     # cierra todo y deja de operar
-python -m bot resume                   # quita el kill switch
-python -m bot reset-halt               # reanuda tras una parada por drawdown
+python -m bot setup
+python -m bot check
+python -m bot run
 ```
 
-Para tenerlo 24/7 en un VPS:
+### Comandos
 
-```bash
-mkdir -p data && sudo chown 1000:1000 data   # el contenedor no corre como root
-docker compose up -d --build
-docker compose logs -f
-docker compose exec bot python -m bot status
-```
+| Comando | Qué hace |
+|---|---|
+| `setup` | Asistente: modo, exchange, pares, perfil de riesgo (conservador/moderado/agresivo), claves y Telegram. Guarda `config.yaml` y `.env` (con permisos 600) |
+| `check [--test-alert]` | Comprueba config, carpeta de datos, conexión, claves, que los pares existen, que tu capital llega al mínimo de orden y que las alertas están configuradas |
+| `run` | Arranca el bucle de trading |
+| `backtest --symbol X --since AAAA-MM-DD` | Backtest con datos históricos (o `--csv`) |
+| `walkforward --symbol X --since AAAA-MM-DD` | Validación fuera de muestra |
+| `status` | Modo, latido, límites, saldo, posiciones y últimas operaciones |
+| `export [--output archivo.csv]` | Todas las operaciones a CSV, para la contabilidad e impuestos |
+| `kill` / `resume` | Parada de emergencia (cierra todo) / reanudar |
+| `reset-halt` | Reanudar tras una parada por drawdown |
 
 ### Pasar a dinero real
 
 1. Crea claves de API **sin permiso de retirada** y restringidas a la IP del servidor.
-2. En `config.yaml`: `mode: live` y, primero, `sandbox: true` (testnet).
-3. En `.env`: `EXCHANGE_API_KEY`, `EXCHANGE_API_SECRET` y `BOT_CONFIRM_LIVE=yes`.
-4. Cuando la testnet vaya bien, `sandbox: false` con un capital pequeño.
+2. `python -m bot setup` → modo `live`, **testnet: sí**.
+3. `python -m bot check` hasta que todo salga ✅, y déjalo funcionar en testnet.
+4. Cambia `sandbox: false` en `config.yaml`, añade `BOT_CONFIRM_LIVE=yes` a
+   `.env`, y empieza con poco capital.
+
+### Integración continua
+
+`.github/workflows/bot-trading.yml` (en la raíz del repo) pasa los tests con
+Python 3.10 y 3.12, comprueba la sintaxis de los scripts y construye la
+imagen Docker en cada cambio de esta carpeta.
 
 ## Limitaciones conocidas
 

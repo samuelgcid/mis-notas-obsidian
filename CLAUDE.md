@@ -7,7 +7,7 @@ compilando/actualizando páginas interconectadas. Tú te encargas de traer
 fuentes y hacer preguntas; el LLM se encarga de resumir, cruzar referencias y
 mantener todo al día.
 
-## Las tres capas
+## Las capas
 
 1. **`Fuentes/`** — documentos originales (artículos, PDFs, transcripciones,
    apuntes, capturas, etc.). **Inmutables**: el LLM las lee pero nunca las
@@ -24,7 +24,11 @@ mantener todo al día.
    - Añade nuevas subcarpetas (p. ej. `Wiki/Comparaciones/`,
      `Wiki/Sintesis/`) cuando el contenido lo pida; documenta aquí cualquier
      categoría nueva que se vuelva recurrente.
-3. **Este archivo (`CLAUDE.md`)** — el esquema. Se actualiza junto con el
+3. **`Proyectos/`** — código y proyectos prácticos que nacen de la wiki (p. ej.
+   `Proyectos/bot-trading/`). Cada proyecto tiene su propio `README.md`,
+   enlazado desde la página de concepto correspondiente y desde
+   `Wiki/index.md` (sección "Proyectos").
+4. **Este archivo (`CLAUDE.md`)** — el esquema. Se actualiza junto con el
    usuario a medida que se descubren mejores convenciones para este dominio
    concreto.
 

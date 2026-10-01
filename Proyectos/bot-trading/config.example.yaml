@@ -1,0 +1,42 @@
+# Copia a config.yaml y ajusta. Los secretos van en .env, no aquí.
+mode: paper            # paper = simulado con precios reales | live = dinero real
+exchange: binance      # cualquier exchange soportado por ccxt
+sandbox: true          # en live: usar la testnet del exchange
+exchange_stops: true   # en live: dejar el stop-loss colocado en el exchange si lo soporta
+symbols: [BTC/USDT, ETH/USDT]
+quote_currency: USDT
+timeframe: 1h
+loop_seconds: 60
+max_consecutive_errors: 5
+paper_initial_balance: 10000
+
+strategy:
+  fast_ema: 20
+  slow_ema: 50
+  trend_ema: 200
+  atr_period: 14
+  atr_stop_mult: 2.0
+  atr_trail_mult: 3.0
+  entry_window: 3
+  cooldown_bars: 3
+
+risk:
+  risk_per_trade: 0.01          # 1 % del capital por operación
+  max_position_pct: 0.25
+  max_total_exposure_pct: 0.60
+  max_open_positions: 3
+  max_daily_loss_pct: 0.03      # pausa nuevas entradas hasta el día siguiente (UTC)
+  max_drawdown_pct: 0.15        # cierra todo y se detiene hasta `reset-halt`
+  fee_rate: 0.001
+  slippage_pct: 0.0005
+
+data:
+  candles: 300
+  max_staleness_bars: 2
+  max_bar_move_pct: 0.20
+
+storage:
+  db_path: data/bot.db
+  log_path: data/bot.log
+  kill_switch_file: data/KILL
+  heartbeat_file: data/heartbeat

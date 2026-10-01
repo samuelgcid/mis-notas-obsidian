@@ -1,0 +1,11 @@
+services:
+  bot:
+    build: .
+    restart: always          # se levanta solo si se cae o si reinicia el servidor
+    env_file: .env
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./data:/app/data     # estado, logs y kill switch persisten fuera del contenedor
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

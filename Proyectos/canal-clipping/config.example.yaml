@@ -1,0 +1,12 @@
+# Copia este archivo a config.yaml y ajústalo.
+privacidad_por_defecto: private   # private | unlisted | public (revisa antes de publicar)
+duracion_max_seg: 180              # límite de Shorts
+salida: {ancho: 1080, alto: 1920, crf: 20, preset: medium}
+youtube:
+  categoria: "24"                  # 24 = Entretenimiento
+  hashtags_fijos: [Shorts]
+tiktok:
+  privacidad: SELF_ONLY            # obligatorio hasta que TikTok audite tu app
+instagram:
+  version_api: v21.0
+  ig_user_id: ""                   # ID de la cuenta profesional de Instagram

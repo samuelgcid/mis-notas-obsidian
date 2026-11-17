@@ -27,3 +27,12 @@ seguimiento de tendencia (EMA 20/50/200 + ATR), gestión de riesgo (1 % por
 operación, pérdida diaria, drawdown, kill switch), estado persistente en
 SQLite, reconciliación, alertas por Telegram, heartbeat, backtest,
 walk-forward, Docker y tests. Se añadió la carpeta `Proyectos/` al esquema.
+
+## [2026-11-17] consulta | Montar un canal de clipping
+
+El usuario quiere un canal de clipping (YouTube Shorts, TikTok, Instagram
+Reels) con vídeos largos de otros creadores: el agente elige los mejores
+momentos y los pasa a 9:16. Se creó [[Wiki/Conceptos/Canal de clipping]] y
+el proyecto `Proyectos/canal-clipping/` (descarga, transcripción, corte
+vertical, subida a las tres plataformas, crédito obligatorio, privado por
+defecto, tests del corte).

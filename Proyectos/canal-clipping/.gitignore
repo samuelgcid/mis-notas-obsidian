@@ -1,0 +1,5 @@
+trabajo/
+secretos/
+config.yaml
+__pycache__/
+.pytest_cache/

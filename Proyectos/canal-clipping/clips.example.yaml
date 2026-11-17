@@ -1,0 +1,12 @@
+# trabajo/<id>/clips.yaml — lo escribe Claude tras leer transcripcion.txt
+fuente: original.mp4
+credito: "🎙️ Clip de @NombreDelCreador — vídeo completo: https://youtube.com/watch?v=XXXX"
+clips:
+  - id: "01"
+    inicio: "00:12:03.5"
+    fin: "00:12:48"
+    titulo: "Frase gancho de menos de 60 caracteres"
+    descripcion: "Una o dos líneas de contexto."
+    hashtags: [podcast, emprendimiento]
+    modo: recorte        # recorte | desenfoque
+    centro_x: 0.35       # 0 = izquierda, 1 = derecha (solo modo recorte)
